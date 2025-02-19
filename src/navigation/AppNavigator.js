@@ -1,18 +1,21 @@
 // src/navigation/AppNavigator.js
 import React from 'react';
-import { TouchableOpacity, Text, Platform } from 'react-native';
+import { TouchableOpacity, Text } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import FastingScreen from '../screens/FastingScreen';
 import DevotionalScreen from '../screens/DevotionalScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AuthScreen from '../screens/AuthScreen';
+import DashboardScreen from '../screens/DashboardScreen';
+import JournalScreen from '../screens/JournalScreen';
+import DailyInspirationsScreen from '../screens/DailyInspirationsScreen';
+import AchievementsScreen from '../screens/AchievementsScreen';
 
 const Stack = createStackNavigator();
 
 const defaultHeaderOptions = {
   headerStyle: {
     backgroundColor: '#2C3E50',
-    // Remove header shadows/borders for a cleaner look
     shadowColor: 'transparent', // iOS
     elevation: 0, // Android
     borderBottomWidth: 0,
@@ -27,6 +30,13 @@ const defaultHeaderOptions = {
 const MainStack = () => (
   <Stack.Navigator screenOptions={defaultHeaderOptions}>
     <Stack.Screen 
+      name="Dashboard" 
+      component={DashboardScreen}
+      options={{
+        title: 'Dashboard',
+      }}
+    />
+    <Stack.Screen 
       name="Fasting" 
       component={FastingScreen}
       options={{
@@ -38,6 +48,27 @@ const MainStack = () => (
       component={DevotionalScreen}
       options={{
         title: 'Daily Devotional',
+      }}
+    />
+    <Stack.Screen 
+      name="Journal" 
+      component={JournalScreen}
+      options={{
+        title: 'Personal Journal',
+      }}
+    />
+    <Stack.Screen 
+      name="DailyInspirations" 
+      component={DailyInspirationsScreen}
+      options={{
+        title: 'Daily Inspirations',
+      }}
+    />
+    <Stack.Screen 
+      name="Achievements" 
+      component={AchievementsScreen}
+      options={{
+        title: 'Achievements',
       }}
     />
     <Stack.Screen 
@@ -60,9 +91,8 @@ const MainStack = () => (
       component={AuthScreen}
       options={{
         title: 'Login / Register',
-        // Disable back navigation to maintain privacy on Auth screen
         headerLeft: () => null,
-        gestureEnabled: false, // Disable swipe back on iOS
+        gestureEnabled: false,
       }}
     />
   </Stack.Navigator>
