@@ -1,46 +1,126 @@
-// DailyInspirationsScreen.js
-import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  StatusBar,
+  Animated,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const inspirations = [
-  { id: '1', quote: "Every day is a new beginning.", author: "Unknown" },
-  { id: '2', quote: "Keep your face always toward the sunshine—and shadows will fall behind you.", author: "Walt Whitman" },
-  { id: '3', quote: "You are never too old to set another goal or to dream a new dream.", author: "C.S. Lewis" },
-  // Add more inspirations as desired
+  { 
+    id: '1', 
+    quote: "Every day is a new beginning.", 
+    author: "Unknown",
+    category: "Motivation"
+  },
+  { 
+    id: '2', 
+    quote: "Keep your face always toward the sunshine—and shadows will fall behind you.", 
+    author: "Walt Whitman",
+    category: "Positivity"
+  },
+  { 
+    id: '3', 
+    quote: "You are never too old to set another goal or to dream a new dream.", 
+    author: "C.S. Lewis",
+    category: "Growth"
+  },
 ];
 
 const DailyInspirationsScreen = () => {
   const [dailyInspiration, setDailyInspiration] = useState(null);
+  const fadeAnim = useState(new Animated.Value(1))[0];
+  const scaleAnim = useState(new Animated.Value(1))[0];
+
+  const animateTransition = useCallback(() => {
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.95,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, [fadeAnim, scaleAnim]);
+
+  const refreshInspiration = useCallback(() => {
+    animateTransition();
+    setTimeout(() => {
+      const randomIndex = Math.floor(Math.random() * inspirations.length);
+      setDailyInspiration(inspirations[randomIndex]);
+    }, 200);
+  }, [animateTransition]);
 
   useEffect(() => {
-    // Select a random inspiration when the component mounts
-    const randomIndex = Math.floor(Math.random() * inspirations.length);
-    setDailyInspiration(inspirations[randomIndex]);
+    refreshInspiration();
   }, []);
-
-  const refreshInspiration = () => {
-    const randomIndex = Math.floor(Math.random() * inspirations.length);
-    setDailyInspiration(inspirations[randomIndex]);
-  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#E0EAFC', '#CFDEF3']} style={styles.gradient}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Daily Inspiration</Text>
-          {dailyInspiration && (
-            <>
-              <Text style={styles.quote}>"{dailyInspiration.quote}"</Text>
-              <Text style={styles.author}>- {dailyInspiration.author}</Text>
-            </>
-          )}
-          <TouchableOpacity style={styles.refreshButton} onPress={refreshInspiration}>
-            <Ionicons name="refresh" size={24} color="#fff" />
-            <Text style={styles.refreshText}>New Inspiration</Text>
-          </TouchableOpacity>
+      <StatusBar barStyle="light-content" backgroundColor="#2E3192" />
+      <LinearGradient
+        colors={['#2E3192', '#1BFFFF']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradient}
+      >
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Daily Wisdom</Text>
+          <Text style={styles.headerSubtitle}>Find your inspiration</Text>
         </View>
+
+        <Animated.View
+          style={[
+            styles.cardContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
+        >
+          <View style={styles.card}>
+            {dailyInspiration && (
+              <>
+                <View style={styles.categoryBadge}>
+                  <Text style={styles.categoryText}>{dailyInspiration.category}</Text>
+                </View>
+                <Text style={styles.quote}>"{dailyInspiration.quote}"</Text>
+                <Text style={styles.author}>― {dailyInspiration.author}</Text>
+              </>
+            )}
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={refreshInspiration}
+              android_ripple={{ color: 'rgba(255, 255, 255, 0.2)' }}
+            >
+              <Ionicons name="refresh" size={20} color="#fff" />
+              <Text style={styles.refreshText}>New Quote</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
       </LinearGradient>
     </SafeAreaView>
   );
@@ -49,53 +129,77 @@ const DailyInspirationsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#2E3192',
   },
   gradient: {
     flex: 1,
-    padding: 20,
-    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  header: {
+    paddingTop: StatusBar.currentHeight + 20,
+    paddingBottom: 20,
+  },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#fff',
+    textAlign: 'left',
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 5,
+  },
+  cardContainer: {
+    flex: 1,
     justifyContent: 'center',
+    paddingBottom: 40,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 24,
     padding: 30,
-    width: Dimensions.get('window').width - 40,
+    width: '100%',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
+    elevation: 4,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
+  categoryBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
     marginBottom: 20,
-    color: '#333',
+  },
+  categoryText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   quote: {
-    fontSize: 18,
-    fontStyle: 'italic',
+    fontSize: 24,
+    fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 10,
-    color: '#555',
+    marginBottom: 20,
+    color: '#fff',
+    lineHeight: 32,
   },
   author: {
     fontSize: 16,
-    color: '#888',
-    marginBottom: 20,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 30,
+    fontWeight: '500',
   },
   refreshButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4A90E2',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 30,
   },
   refreshText: {
     color: '#fff',
-    marginLeft: 10,
+    marginLeft: 8,
     fontSize: 16,
     fontWeight: '600',
   },

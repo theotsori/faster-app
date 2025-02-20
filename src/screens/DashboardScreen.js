@@ -4,9 +4,9 @@ import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
   TouchableOpacity,
   ScrollView,
+  StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,69 +19,108 @@ const DashboardScreen = () => {
     fastingProgress: 65,
     journalEntries: 12,
     mood: 'Positive',
+    streak: 7,
   };
 
   const navigationItems = [
-    { screen: 'Fasting', label: 'Fasting Timer', icon: 'timer', color: '#4A90E2' },
-    { screen: 'Devotional', label: 'Devotional', icon: 'book', color: '#50E3C2' },
-    { screen: 'Journal', label: 'Journal', icon: 'create', color: '#F5A623' },
-    { screen: 'DailyInspirations', label: 'Inspirations', icon: 'sunny', color: '#FF3860' },
-    { screen: 'Achievements', label: 'Achievements', icon: 'trophy', color: '#B8E986' },
-    { screen: 'Profile', label: 'Profile', icon: 'person', color: '#BD10E0' },
+    { screen: 'Fasting', label: 'Fasting Timer', icon: 'timer-outline', color: '#4A90E2', gradient: ['#4A90E2', '#357ABD'] },
+    { screen: 'Devotional', label: 'Devotional', icon: 'book-outline', color: '#50E3C2', gradient: ['#50E3C2', '#3AA893'] },
+    { screen: 'Journal', label: 'Journal', icon: 'create-outline', color: '#F5A623', gradient: ['#F5A623', '#D48A15'] },
+    { screen: 'DailyInspirations', label: 'Inspirations', icon: 'sunny-outline', color: '#FF3860', gradient: ['#FF3860', '#E82448'] },
+    { screen: 'Achievements', label: 'Achievements', icon: 'trophy-outline', color: '#B8E986', gradient: ['#B8E986', '#96C56B'] },
+    { screen: 'Profile', label: 'Profile', icon: 'person-outline', color: '#BD10E0', gradient: ['#BD10E0', '#9B0DB8'] },
   ];
+
+  const renderMetricCard = (icon, value, label, progress = null, color) => (
+    <View style={[styles.metricCard, styles.cardShadow]}>
+      <View style={[styles.metricIconContainer, { backgroundColor: `${color}20` }]}>
+        <Ionicons name={icon} size={24} color={color} />
+      </View>
+      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={styles.metricLabel}>{label}</Text>
+      {progress !== null && (
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: color }]} />
+        </View>
+      )}
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#2A2D3E', '#3E4258']} style={styles.gradient}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {/* Header Section */}
+      <StatusBar barStyle="light-content" backgroundColor="#1A1D2E" />
+      <LinearGradient
+        colors={['#1A1D2E', '#2A2D3E']}
+        style={styles.gradient}
+      >
+        <ScrollView 
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContainer}
+        >
           <View style={styles.headerContainer}>
-            <Text style={styles.greeting}>Good Morning, User!</Text>
-            <Text style={styles.header}>Dashboard</Text>
-          </View>
-
-          {/* Metrics Cards */}
-          <View style={styles.cardContainer}>
-            <View style={[styles.metricCard, styles.cardShadow]}>
-              <Ionicons name="timer" size={28} color="#4A90E2" />
-              <Text style={styles.metricValue}>{metrics.fastingProgress}%</Text>
-              <Text style={styles.metricLabel}>Fasting Progress</Text>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${metrics.fastingProgress}%` }]} />
+            <View style={styles.greetingContainer}>
+              <Text style={styles.greeting}>Good Morning,</Text>
+              <View style={styles.userContainer}>
+                <Text style={styles.username}>Sarah</Text>
+                <TouchableOpacity 
+                  style={styles.notificationBadge}
+                  onPress={() => navigation.navigate('Notifications')}
+                >
+                  <Ionicons name="notifications-outline" size={24} color="#FFF" />
+                </TouchableOpacity>
               </View>
             </View>
-            
-            <View style={[styles.metricCard, styles.cardShadow]}>
-              <Ionicons name="book" size={28} color="#50E3C2" />
-              <Text style={styles.metricValue}>{metrics.journalEntries}</Text>
-              <Text style={styles.metricLabel}>Journal Entries</Text>
-            </View>
-            
-            <View style={[styles.metricCard, styles.cardShadow]}>
-              <Ionicons name="happy" size={28} color="#F5A623" />
-              <Text style={styles.metricValue}>{metrics.mood}</Text>
-              <Text style={styles.metricLabel}>Current Mood</Text>
-            </View>
           </View>
 
-          {/* Quick Access Grid */}
+          <View style={styles.streakContainer}>
+            <LinearGradient
+              colors={['#4A90E2', '#357ABD']}
+              style={styles.streakCard}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <View style={styles.streakContent}>
+                <Ionicons name="flame-outline" size={32} color="#FFF" />
+                <Text style={styles.streakText}>{metrics.streak} Day Streak!</Text>
+              </View>
+              <Text style={styles.streakSubtext}>Keep up the great work!</Text>
+            </LinearGradient>
+          </View>
+
+          <Text style={styles.sectionTitle}>Today's Progress</Text>
+          <View style={styles.metricsContainer}>
+            {renderMetricCard('timer-outline', `${metrics.fastingProgress}%`, 'Fasting Progress', metrics.fastingProgress, '#4A90E2')}
+            {renderMetricCard('book-outline', metrics.journalEntries, 'Journal Entries', null, '#50E3C2')}
+            {renderMetricCard('sunny-outline', metrics.mood, 'Current Mood', null, '#F5A623')}
+          </View>
+
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.gridContainer}>
-            {navigationItems.map((item) => (
+            {navigationItems.map((item, index) => (
               <TouchableOpacity
-                key={item.screen}
-                style={[styles.gridItem, { backgroundColor: item.color }]}
+                key={index}
+                style={[styles.gridItem, styles.cardShadow]}
                 onPress={() => navigation.navigate(item.screen)}
               >
-                <Ionicons name={item.icon} size={32} color="white" />
-                <Text style={styles.gridLabel}>{item.label}</Text>
+                <LinearGradient
+                  colors={item.gradient}
+                  style={styles.gridItemGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Ionicons name={item.icon} size={28} color="#FFF" />
+                  <Text style={styles.gridLabel}>{item.label}</Text>
+                </LinearGradient>
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* Daily Inspiration */}
           <View style={[styles.inspirationCard, styles.cardShadow]}>
-            <Text style={styles.inspirationText}>"The secret of getting ahead is getting started."</Text>
+            <Text style={styles.inspirationTitle}>Daily Wisdom</Text>
+            <Text style={styles.inspirationText}>
+              "The secret of getting ahead is getting started."
+            </Text>
             <Text style={styles.inspirationAuthor}>- Mark Twain</Text>
           </View>
         </ScrollView>
@@ -90,16 +129,15 @@ const DashboardScreen = () => {
   );
 };
 
-const { width } = Dimensions.get('window');
-const CARD_MARGIN = 15;
-const cardWidth = (width - (CARD_MARGIN * 4)) / 3;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2A2D3E',
+    backgroundColor: '#1A1D2E',
   },
   gradient: {
+    flex: 1,
+  },
+  scrollView: {
     flex: 1,
   },
   scrollContainer: {
@@ -107,93 +145,138 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   headerContainer: {
-    marginBottom: 30,
+    marginBottom: 24,
+  },
+  greetingContainer: {
+    marginTop: 20,
   },
   greeting: {
     fontSize: 16,
     color: 'rgba(255,255,255,0.7)',
-    marginBottom: 5,
+    marginBottom: 4,
   },
-  header: {
+  userContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  username: {
     fontSize: 32,
     fontWeight: '700',
     color: '#FFF',
-    fontFamily: 'HelveticaNeue-Bold',
   },
-  cardContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 30,
+  notificationBadge: {
+    padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
   },
-  metricCard: {
-    backgroundColor: '#3A3F54',
+  streakContainer: {
+    marginBottom: 24,
+  },
+  streakCard: {
     borderRadius: 20,
-    width: cardWidth,
     padding: 20,
-    alignItems: 'center',
   },
-  metricValue: {
+  streakContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  streakText: {
     fontSize: 24,
     fontWeight: '700',
     color: '#FFF',
-    marginVertical: 10,
+    marginLeft: 12,
   },
-  metricLabel: {
+  streakSubtext: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
-    textAlign: 'center',
-  },
-  progressBar: {
-    height: 4,
-    width: '100%',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 2,
-    marginTop: 15,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#4A90E2',
-    borderRadius: 2,
+    color: 'rgba(255,255,255,0.8)',
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#FFF',
-    marginBottom: 20,
+    marginBottom: 16,
+  },
+  metricsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  metricCard: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 20,
+    padding: 16,
+    width: '31%',
+  },
+  metricIconContainer: {
+    padding: 8,
+    borderRadius: 12,
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  metricValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFF',
+    marginBottom: 4,
+  },
+  metricLabel: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 2,
+    marginTop: 12,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
   },
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginBottom: 24,
   },
   gridItem: {
-    width: (width - 60) / 2,
-    height: 120,
+    width: '48%',
+    marginBottom: 16,
     borderRadius: 20,
-    marginBottom: 20,
-    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  gridItemGradient: {
+    padding: 24,
     alignItems: 'center',
-    padding: 15,
+    justifyContent: 'center',
   },
   gridLabel: {
-    color: 'white',
+    color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
-    marginTop: 10,
+    marginTop: 12,
     textAlign: 'center',
   },
   inspirationCard: {
-    backgroundColor: '#3A3F54',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 20,
-    padding: 25,
-    marginTop: 10,
+    padding: 24,
+  },
+  inspirationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: 12,
   },
   inspirationText: {
-    color: 'white',
-    fontSize: 16,
-    lineHeight: 24,
+    color: '#FFF',
+    fontSize: 18,
+    lineHeight: 26,
     fontStyle: 'italic',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   inspirationAuthor: {
     color: 'rgba(255,255,255,0.7)',
@@ -202,9 +285,9 @@ const styles = StyleSheet.create({
   },
   cardShadow: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
+    shadowRadius: 8,
     elevation: 5,
   },
 });

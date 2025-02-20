@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
   Image,
+  StyleSheet,
   Dimensions,
   Share,
 } from 'react-native';
@@ -14,7 +14,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 const DevotionalScreen = () => {
-  // Date setup for header
   const [currentDate] = useState(
     new Date().toLocaleDateString('en-US', {
       weekday: 'long',
@@ -24,12 +23,10 @@ const DevotionalScreen = () => {
     })
   );
 
-  // New interactive features
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [textSize, setTextSize] = useState(16);
 
-  // Sample devotional content
   const devotional = {
     verse: 'Philippians 4:13',
     verseText: 'I can do all things through Christ who strengthens me.',
@@ -42,21 +39,13 @@ const DevotionalScreen = () => {
       'What seemingly impossible task can you approach with renewed confidence?',
     ],
     prayer:
-      'Dear Lord, grant me the wisdom to recognize Your strength working in my life. Help me to face today’s challenges with the confidence that comes from knowing You are with me. Amen.',
+      'Dear Lord, grant me the wisdom to recognize Your strength working in my life. Help me to face today\'s challenges with the confidence that comes from knowing You are with me. Amen.',
   };
-
-  // Handlers for interactive features
-  const toggleBookmark = () => setIsBookmarked((prev) => !prev);
-  const toggleAudio = () => setIsAudioPlaying((prev) => !prev);
-  const increaseTextSize = () => setTextSize((prev) => (prev < 24 ? prev + 2 : prev));
-  const decreaseTextSize = () => setTextSize((prev) => (prev > 12 ? prev - 2 : prev));
 
   const onShare = async () => {
     try {
       await Share.share({
-        message: `${devotional.title}\n\n${devotional.content}\n\nReflection:\n${devotional.reflection.join(
-          '\n'
-        )}\n\nPrayer:\n${devotional.prayer}`,
+        message: `${devotional.title}\n\n${devotional.verseText}\n\n${devotional.content}\n\nReflection:\n${devotional.reflection.join('\n')}\n\nPrayer:\n${devotional.prayer}`,
       });
     } catch (error) {
       console.log(error.message);
@@ -64,75 +53,100 @@ const DevotionalScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
-        <LinearGradient colors={['#f7f9fe', '#ffffff']} style={styles.gradientContainer}>
-          {/* Header & Banner */}
-          <View style={styles.headerContainer}>
+        <LinearGradient colors={['#F8FAFC', '#FFFFFF']} style={styles.gradient}>
+          {/* Header */}
+          <View style={styles.header}>
             <Text style={styles.date}>{currentDate}</Text>
             <View style={styles.bannerContainer}>
               <Image
-                source={{ uri: 'https://via.placeholder.com/400x200.png?text=Devotional+Banner' }}
+                source={{ uri: 'https://via.placeholder.com/800x400' }}
                 style={styles.bannerImage}
               />
+              <View style={styles.bannerOverlay} />
             </View>
           </View>
 
           {/* Control Bar */}
           <View style={styles.controlBar}>
-            <TouchableOpacity onPress={toggleBookmark} style={styles.controlButton}>
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={() => setIsBookmarked(!isBookmarked)}
+            >
               <Ionicons
                 name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
                 size={24}
-                color="#4A90E2"
+                color={isBookmarked ? '#2563EB' : '#64748B'}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={toggleAudio} style={styles.controlButton}>
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={() => setIsAudioPlaying(!isAudioPlaying)}
+            >
               <Ionicons
                 name={isAudioPlaying ? 'pause-circle' : 'play-circle'}
                 size={24}
-                color="#4A90E2"
+                color="#64748B"
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={decreaseTextSize} style={styles.controlButton}>
-              <Ionicons name="remove-circle-outline" size={24} color="#4A90E2" />
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={() => setTextSize(prev => Math.max(12, prev - 2))}
+            >
+              <Ionicons name="remove-circle-outline" size={24} color="#64748B" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={increaseTextSize} style={styles.controlButton}>
-              <Ionicons name="add-circle-outline" size={24} color="#4A90E2" />
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={() => setTextSize(prev => Math.min(24, prev + 2))}
+            >
+              <Ionicons name="add-circle-outline" size={24} color="#64748B" />
             </TouchableOpacity>
           </View>
 
-          {/* Devotional Card */}
-          <View style={styles.cardContainer}>
-            <View style={styles.verseContainer}>
-              <Text style={styles.verse}>{devotional.verse}</Text>
-              <Text style={styles.verseText}>"{devotional.verseText}"</Text>
+          {/* Main Content Card */}
+          <View style={styles.card}>
+            {/* Verse Section */}
+            <View style={styles.verseSection}>
+              <Text style={styles.verseReference}>{devotional.verse}</Text>
+              <Text style={[styles.verseText, { fontSize: textSize + 4 }]}>
+                "{devotional.verseText}"
+              </Text>
             </View>
 
-            <View style={styles.contentContainer}>
-              <Text style={[styles.title, { fontSize: textSize + 8 }]}>{devotional.title}</Text>
-              <Text style={[styles.content, { fontSize: textSize }]}>{devotional.content}</Text>
-            </View>
+            {/* Title & Content */}
+            <Text style={[styles.title, { fontSize: textSize + 8 }]}>
+              {devotional.title}
+            </Text>
+            <Text style={[styles.content, { fontSize: textSize }]}>
+              {devotional.content}
+            </Text>
 
-            <View style={styles.reflectionContainer}>
+            {/* Reflection Section */}
+            <View style={styles.reflectionSection}>
               <Text style={styles.sectionTitle}>For Reflection</Text>
               {devotional.reflection.map((question, index) => (
                 <View key={index} style={styles.reflectionItem}>
                   <Text style={styles.bullet}>•</Text>
-                  <Text style={[styles.reflectionText, { fontSize: textSize }]}>{question}</Text>
+                  <Text style={[styles.reflectionText, { fontSize: textSize }]}>
+                    {question}
+                  </Text>
                 </View>
               ))}
             </View>
 
-            <View style={styles.prayerContainer}>
+            {/* Prayer Section */}
+            <View style={styles.prayerSection}>
               <Text style={styles.sectionTitle}>Prayer</Text>
-              <Text style={[styles.prayer, { fontSize: textSize }]}>{devotional.prayer}</Text>
+              <Text style={[styles.prayer, { fontSize: textSize }]}>
+                {devotional.prayer}
+              </Text>
             </View>
           </View>
 
           {/* Share Button */}
           <TouchableOpacity style={styles.shareButton} onPress={onShare}>
-            <Ionicons name="share-social-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+            <Ionicons name="share-outline" size={20} color="#FFFFFF" />
             <Text style={styles.shareButtonText}>Share This Devotional</Text>
           </TouchableOpacity>
         </LinearGradient>
@@ -142,97 +156,103 @@ const DevotionalScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
-    backgroundColor: '#f7f9fe',
+    backgroundColor: '#F8FAFC',
   },
   scrollView: {
     flex: 1,
   },
-  gradientContainer: {
+  gradient: {
     minHeight: Dimensions.get('window').height,
     padding: 20,
   },
-  headerContainer: {
-    marginBottom: 20,
+  header: {
+    marginBottom: 24,
   },
   date: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
+    fontSize: 14,
+    color: '#64748B',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 16,
   },
   bannerContainer: {
-    borderRadius: 15,
+    borderRadius: 16,
     overflow: 'hidden',
+    position: 'relative',
   },
   bannerImage: {
     width: '100%',
     height: 200,
     resizeMode: 'cover',
   },
+  bannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
   controlBar: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   controlButton: {
-    marginHorizontal: 10,
+    padding: 8,
+    marginHorizontal: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  cardContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 15,
-    padding: 20,
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 3,
-    marginBottom: 20,
   },
-  verseContainer: {
+  verseSection: {
     alignItems: 'center',
-    marginBottom: 24,
     paddingBottom: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#F1F5F9',
+    marginBottom: 24,
   },
-  verse: {
-    fontSize: 18,
+  verseReference: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#1E293B',
     marginBottom: 8,
   },
   verseText: {
-    fontSize: 20,
     fontWeight: '500',
-    color: '#1a1a1a',
+    color: '#0F172A',
     textAlign: 'center',
     fontStyle: 'italic',
   },
-  contentContainer: {
-    marginBottom: 24,
-  },
   title: {
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: '#0F172A',
     marginBottom: 16,
   },
   content: {
+    color: '#334155',
     lineHeight: 24,
-    color: '#444',
-  },
-  reflectionContainer: {
     marginBottom: 24,
-    backgroundColor: '#f8f9fb',
+  },
+  reflectionSection: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
     padding: 16,
-    borderRadius: 10,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: '#0F172A',
     marginBottom: 16,
   },
   reflectionItem: {
@@ -242,32 +262,31 @@ const styles = StyleSheet.create({
   bullet: {
     fontSize: 16,
     marginRight: 8,
-    color: '#666',
+    color: '#94A3B8',
   },
   reflectionText: {
-    color: '#444',
     flex: 1,
+    color: '#334155',
   },
-  prayerContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
+  prayerSection: {
+    marginBottom: 8,
   },
   prayer: {
+    color: '#334155',
     fontStyle: 'italic',
-    color: '#444',
     lineHeight: 24,
   },
   shareButton: {
     flexDirection: 'row',
-    backgroundColor: '#4A90E2',
-    padding: 16,
-    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
+    backgroundColor: '#2563EB',
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
   },
   shareButtonText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
