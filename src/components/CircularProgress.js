@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
+import { Animated } from 'react-native';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -18,8 +19,22 @@ const CircularProgress = ({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  // Calculate the dash offset based on progress
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
+  // Animated progress value for smooth transitions
+  const animatedProgress = useRef(new Animated.Value(progress)).current;
+
+  useEffect(() => {
+    Animated.timing(animatedProgress, {
+      toValue: progress,
+      duration: 500,
+      useNativeDriver: false, // Animated SVG properties require useNativeDriver false
+    }).start();
+  }, [progress]);
+
+  // Interpolate animated value to calculate the strokeDashoffset
+  const animatedDashoffset = animatedProgress.interpolate({
+    inputRange: [0, 100],
+    outputRange: [circumference, 0],
+  });
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
@@ -34,7 +49,7 @@ const CircularProgress = ({
             strokeWidth={strokeWidth}
             fill="transparent"
           />
-          {/* Progress Circle */}
+          {/* Animated Progress Circle */}
           <AnimatedCircle
             cx={center}
             cy={center}
@@ -43,7 +58,7 @@ const CircularProgress = ({
             strokeWidth={strokeWidth}
             fill="transparent"
             strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
+            strokeDashoffset={animatedDashoffset}
             strokeLinecap="round"
           />
         </G>

@@ -1,5 +1,16 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity, SafeAreaView, Modal, ScrollView } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  Animated, 
+  TouchableOpacity, 
+  SafeAreaView, 
+  Modal, 
+  ScrollView, 
+  Platform, 
+  StatusBar 
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import CircularProgress from '../components/CircularProgress';
@@ -8,6 +19,7 @@ import FeelingLogModal from '../components/FeelingLogModal';
 import * as Notifications from 'expo-notifications';
 import { useNavigation } from '@react-navigation/native';
 
+// Notification handler remains the same
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -19,19 +31,19 @@ Notifications.setNotificationHandler({
 const BIBLICAL_FASTS = [
   {
     name: "Daniel Fast",
-    duration: 21 * 24 * 60 * 60 * 1000, // 21 days
+    duration: 21 * 24 * 60 * 60 * 1000,
     description: "A partial fast abstaining from choice foods (Daniel 10:2-3)",
     verse: "Daniel 10:2-3",
   },
   {
     name: "Esther Fast",
-    duration: 3 * 24 * 60 * 60 * 1000, // 3 days
+    duration: 3 * 24 * 60 * 60 * 1000,
     description: "Complete fast for spiritual breakthrough",
     verse: "Esther 4:16",
   },
   {
     name: "Day of Atonement",
-    duration: 24 * 60 * 60 * 1000, // 24 hours
+    duration: 24 * 60 * 60 * 1000,
     description: "Sunset to sunset fast for spiritual cleansing",
     verse: "Leviticus 23:27-32",
   },
@@ -54,17 +66,17 @@ const FastingScreen = () => {
   const [currentVerse, setCurrentVerse] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  
   const [customTarget, setCustomTarget] = useState(BIBLICAL_FASTS[0].duration);
 
+  // Cycle verses every 10 seconds for dynamic encouragement
   useEffect(() => {
     const verseInterval = setInterval(() => {
       setCurrentVerse((prev) => (prev + 1) % ENCOURAGING_VERSES.length);
     }, 10000);
-
     return () => clearInterval(verseInterval);
   }, []);
 
+  // Timer and progress calculation
   useEffect(() => {
     let interval;
     if (fasting && startTime) {
@@ -79,6 +91,7 @@ const FastingScreen = () => {
     return () => clearInterval(interval);
   }, [fasting, startTime, customTarget, elapsedTime]);
 
+  // Button animation for tactile feedback
   const animateButton = () => {
     Animated.sequence([
       Animated.parallel([
@@ -108,6 +121,7 @@ const FastingScreen = () => {
     ]).start();
   };
 
+  // Toggle fast state and schedule notifications
   const toggleFasting = () => {
     animateButton();
     if (fasting) {
@@ -132,7 +146,6 @@ const FastingScreen = () => {
     const days = Math.floor(totalSeconds / (24 * 3600));
     const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
-    
     if (days > 0) {
       return `${days}d ${hours}h ${minutes}m`;
     }
@@ -145,20 +158,15 @@ const FastingScreen = () => {
 
   const scheduleNotification = useCallback(async (title, body, delay = null) => {
     await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body,
-      },
+      content: { title, body },
       trigger: delay ? { seconds: delay / 1000 } : null,
     });
   }, []);
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#1E3A8A', '#3B82F6']}
-        style={styles.gradient}
-      >
+      <StatusBar barStyle="light-content" />
+      <LinearGradient colors={['#0F172A', '#1E293B']} style={styles.gradient}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Sacred Fast</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
@@ -166,7 +174,7 @@ const FastingScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.scrollView}>
+        <ScrollView contentContainerStyle={styles.scrollView}>
           <View style={styles.verseContainer}>
             <Text style={styles.verseText}>{ENCOURAGING_VERSES[currentVerse]}</Text>
           </View>
@@ -185,10 +193,7 @@ const FastingScreen = () => {
                     {fasting ? formatElapsedTime() : 'Ready'}
                   </Text>
                   <Text style={styles.targetText}>
-                    {selectedFastIndex !== null ? 
-                      BIBLICAL_FASTS[selectedFastIndex].name :
-                      'Select a fast type'
-                    }
+                    {selectedFastIndex !== null ? BIBLICAL_FASTS[selectedFastIndex].name : 'Select a fast type'}
                   </Text>
                 </View>
               </CircularProgress>
@@ -198,10 +203,7 @@ const FastingScreen = () => {
               {BIBLICAL_FASTS.map((fast, index) => (
                 <TouchableOpacity
                   key={fast.name}
-                  style={[
-                    styles.fastTypeButton,
-                    selectedFastIndex === index && styles.selectedFastType
-                  ]}
+                  style={[styles.fastTypeButton, selectedFastIndex === index && styles.selectedFastType]}
                   onPress={() => selectBiblicalFast(index)}
                 >
                   <Text style={styles.fastTypeName}>{fast.name}</Text>
@@ -211,10 +213,7 @@ const FastingScreen = () => {
             </View>
 
             <TouchableOpacity
-              style={[
-                styles.mainButton,
-                { backgroundColor: fasting ? '#DC2626' : '#059669' }
-              ]}
+              style={[styles.mainButton, { backgroundColor: fasting ? '#DC2626' : '#059669' }]}
               onPress={toggleFasting}
               disabled={selectedFastIndex === null && !fasting}
             >
@@ -224,16 +223,10 @@ const FastingScreen = () => {
             </TouchableOpacity>
 
             <View style={styles.optionsContainer}>
-              <TouchableOpacity 
-                onPress={() => setCustomFastingModalVisible(true)} 
-                style={styles.optionButton}
-              >
+              <TouchableOpacity onPress={() => setCustomFastingModalVisible(true)} style={styles.optionButton}>
                 <Text style={styles.optionButtonText}>Custom Fast</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                onPress={() => setFeelingLogModalVisible(true)} 
-                style={styles.optionButton}
-              >
+              <TouchableOpacity onPress={() => navigation.navigate('Journal')} style={styles.optionButton}>
                 <Text style={styles.optionButtonText}>Spiritual Journal</Text>
               </TouchableOpacity>
             </View>
@@ -245,7 +238,7 @@ const FastingScreen = () => {
             <Ionicons name="book-outline" size={24} color="#fff" />
             <Text style={styles.footerText}>Devotional</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.footerItem} onPress={() => navigation.navigate('Statistics')}>
+          <TouchableOpacity style={styles.footerItem} onPress={() => navigation.navigate('Achievements')}>
             <Ionicons name="stats-chart-outline" size={24} color="#fff" />
             <Text style={styles.footerText}>Progress</Text>
           </TouchableOpacity>
@@ -258,10 +251,7 @@ const FastingScreen = () => {
         visible={customFastingModalVisible}
         onRequestClose={() => setCustomFastingModalVisible(false)}
       >
-        <CustomFastingModal 
-          onClose={() => setCustomFastingModalVisible(false)} 
-          onSave={setCustomTarget}
-        />
+        <CustomFastingModal onClose={() => setCustomFastingModalVisible(false)} onSave={setCustomTarget} />
       </Modal>
 
       <Modal
@@ -283,16 +273,16 @@ const styles = StyleSheet.create({
   gradient: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 12 : StatusBar.currentHeight + 12,
   },
   scrollView: {
-    flex: 1,
+    paddingBottom: 30,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 20,
-    paddingBottom: 10,
+    paddingVertical: 20,
   },
   headerTitle: {
     color: '#fff',
@@ -317,6 +307,7 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     marginVertical: 20,
+    alignItems: 'center',
   },
   progressContent: {
     justifyContent: 'center',
