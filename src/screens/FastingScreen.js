@@ -9,50 +9,87 @@ import {
   Modal, 
   ScrollView, 
   Platform, 
-  StatusBar 
+  StatusBar, 
+  Dimensions, 
+  Easing 
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import CircularProgress from '../components/CircularProgress';
 import CustomFastingModal from '../components/CustomFastingModal';
 import FeelingLogModal from '../components/FeelingLogModal';
 import * as Notifications from 'expo-notifications';
 import { useNavigation } from '@react-navigation/native';
 
-// Notification handler remains the same
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Configure notifications
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
-    shouldPlaySound: false,
+    shouldPlaySound: true,
     shouldSetBadge: false,
   }),
 });
 
+// Biblical fasts data with enhanced styling properties and unique icons
 const BIBLICAL_FASTS = [
   {
+    id: '1',
     name: "Daniel Fast",
-    duration: 21 * 24 * 60 * 60 * 1000,
-    description: "A partial fast abstaining from choice foods (Daniel 10:2-3)",
+    duration: 21 * 24 * 60 * 60 * 1000, // 21 days
+    description: "A partial fast abstaining from choice foods",
     verse: "Daniel 10:2-3",
+    exactWords: "At that time I, Daniel, mourned for three weeks. I ate no choice food; no meat or wine touched my lips; and I used no lotions at all until the three weeks were over.",
+    detailedDescription: "A 21-day fast focused on simple foods and spiritual clarity, following Daniel's example of devotion.",
+    icon: "leaf-outline",
+    themeColor: "#10B981",
+    gradient: ['#059669', '#10B981']
   },
   {
+    id: '2',
     name: "Esther Fast",
-    duration: 3 * 24 * 60 * 60 * 1000,
-    description: "Complete fast for spiritual breakthrough",
+    duration: 3 * 24 * 60 * 60 * 1000, // 3 days
+    description: "Complete fast for divine intervention",
     verse: "Esther 4:16",
+    exactWords: "Go, gather together all the Jews who are in Susa, and fast for me. Do not eat or drink for three days, night or day.",
+    detailedDescription: "A three-day fast for urgent spiritual breakthrough, following Queen Esther's example.",
+    icon: "star-outline",
+    themeColor: "#8B5CF6",
+    gradient: ['#7C3AED', '#8B5CF6']
   },
   {
+    id: '3',
     name: "Day of Atonement",
-    duration: 24 * 60 * 60 * 1000,
-    description: "Sunset to sunset fast for spiritual cleansing",
+    duration: 24 * 60 * 60 * 1000, // 1 day
+    description: "Sunset to sunset spiritual cleansing",
     verse: "Leviticus 23:27-32",
+    exactWords: "The tenth day of this seventh month is the Day of Atonement. Hold a sacred assembly and deny yourselves.",
+    detailedDescription: "A 24-hour fast from sunset to sunset, focused on repentance and spiritual renewal.",
+    icon: "moon-outline",
+    themeColor: "#6366F1",
+    gradient: ['#4F46E5', '#6366F1']
   },
+  {
+    id: '4',
+    name: "40-Day Fast",
+    duration: 40 * 24 * 60 * 60 * 1000, // 40 days
+    description: "A fast practiced by Moses and Jesus for spiritual preparation",
+    verse: "Exodus 34:28 / Matthew 4:1-2",
+    exactWords: "Moses: 'Moses was there with the Lord forty days and forty nights without eating bread or drinking water.' / Jesus: 'Then Jesus was led by the Spirit into the wilderness...'",
+    detailedDescription: "A 40-day fast demonstrating total reliance on God, as exemplified by Moses on Mount Sinai and Jesus in the wilderness.",
+    icon: "sunny-outline",
+    themeColor: "#F59E0B",
+    gradient: ['#FBBF24', '#F59E0B']
+  }
 ];
 
 const ENCOURAGING_VERSES = [
-  "But when you fast, put oil on your head and wash your face... - Matthew 6:17-18",
-  "Prayer and fasting moves mountains... - Matthew 17:21",
-  "This kind can only come out by prayer and fasting... - Mark 9:29",
+  "But when you fast, put oil on your head and wash your face, so that it will not be obvious to others that you are fasting. - Matthew 6:17-18",
+  "Prayer and fasting can move mountains and bring breakthrough in your life. - Matthew 17:21",
+  "This kind can only come out by prayer and fasting. - Mark 9:29",
+  "Declare a holy fast; call a sacred assembly. - Joel 1:14"
 ];
 
 const FastingScreen = () => {
@@ -60,38 +97,74 @@ const FastingScreen = () => {
   const [fasting, setFasting] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [customFastingModalVisible, setCustomFastingModalVisible] = useState(false);
-  const [feelingLogModalVisible, setFeelingLogModalVisible] = useState(false);
   const [selectedFastIndex, setSelectedFastIndex] = useState(null);
   const [currentVerse, setCurrentVerse] = useState(0);
+  const [customFastingModalVisible, setCustomFastingModalVisible] = useState(false);
+  const [feelingLogModalVisible, setFeelingLogModalVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const cardSlideAnim = useRef(new Animated.Value(0)).current;
   const [customTarget, setCustomTarget] = useState(BIBLICAL_FASTS[0].duration);
 
-  // Cycle verses every 10 seconds for dynamic encouragement
+  // Animation setup
   useEffect(() => {
+    Animated.spring(cardSlideAnim, {
+      toValue: 1,
+      tension: 20,
+      friction: 7,
+      useNativeDriver: true
+    }).start();
+
     const verseInterval = setInterval(() => {
-      setCurrentVerse((prev) => (prev + 1) % ENCOURAGING_VERSES.length);
+      setCurrentVerse(prev => (prev + 1) % ENCOURAGING_VERSES.length);
     }, 10000);
+
     return () => clearInterval(verseInterval);
   }, []);
 
-  // Timer and progress calculation
+  // Timer management
   useEffect(() => {
     let interval;
     if (fasting && startTime) {
       interval = setInterval(() => {
         const now = new Date();
-        setElapsedTime(now - startTime);
-        if (elapsedTime >= customTarget) {
-          scheduleNotification('Fast Completed! 🙏', 'May your sacrifice be blessed.');
+        const newElapsed = now - startTime;
+        setElapsedTime(newElapsed);
+        
+        if (newElapsed >= customTarget) {
+          handleFastComplete();
         }
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [fasting, startTime, customTarget, elapsedTime]);
+  }, [fasting, startTime, customTarget]);
 
-  // Button animation for tactile feedback
+  const handleFastComplete = async () => {
+    await scheduleNotification(
+      'Fast Completed! 🎉',
+      'Congratulations on completing your fast. Take time to reflect on your spiritual journey.'
+    );
+    setFasting(false);
+    setStartTime(null);
+    setElapsedTime(0);
+  };
+
+  const scheduleNotification = async (title, body, delay = 0) => {
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          sound: true,
+        },
+        trigger: delay ? { seconds: delay } : null,
+      });
+    } catch (error) {
+      console.error('Failed to schedule notification:', error);
+    }
+  };
+
   const animateButton = () => {
     Animated.sequence([
       Animated.parallel([
@@ -109,111 +182,207 @@ const FastingScreen = () => {
       Animated.parallel([
         Animated.timing(scaleAnim, {
           toValue: 1,
-          duration: 100,
+          duration: 200,
           useNativeDriver: true,
         }),
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 100,
+          duration: 200,
           useNativeDriver: true,
         }),
       ]),
     ]).start();
   };
 
-  // Toggle fast state and schedule notifications
-  const toggleFasting = () => {
+  const toggleFasting = async () => {
     animateButton();
     if (fasting) {
-      setFasting(false);
-      setStartTime(null);
-      setElapsedTime(0);
-      scheduleNotification('Fast Completed', 'Remember to break your fast mindfully.');
+      await handleFastComplete();
     } else {
       setFasting(true);
       setStartTime(new Date());
-      scheduleNotification('Fast Begun', 'May this time draw you closer to God.', 3600000);
+      await scheduleNotification(
+        'Fast Started 🙏',
+        'May this time of fasting bring you closer to God.',
+        3600 // Notification after 1 hour
+      );
     }
   };
 
   const selectBiblicalFast = (index) => {
     setSelectedFastIndex(index);
     setCustomTarget(BIBLICAL_FASTS[index].duration);
+    animateButton();
   };
 
-  const formatElapsedTime = () => {
-    const totalSeconds = Math.floor(elapsedTime / 1000);
+  const formatTime = (ms) => {
+    const totalSeconds = Math.floor(ms / 1000);
     const days = Math.floor(totalSeconds / (24 * 3600));
     const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
     if (days > 0) {
       return `${days}d ${hours}h ${minutes}m`;
     }
-    return `${hours}h ${minutes}m`;
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    }
+    return `${minutes}m ${seconds}s`;
+  };
+
+  const formatTimeLeft = () => {
+    const remaining = customTarget - elapsedTime;
+    return remaining > 0 ? formatTime(remaining) : "0s";
+  };
+
+  const formatEndTime = () => {
+    if (!startTime) return "";
+    const endTime = new Date(startTime.getTime() + customTarget);
+    return endTime.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
   };
 
   const calculateProgress = () => {
     return Math.min((elapsedTime / customTarget) * 100, 100);
   };
 
-  const scheduleNotification = useCallback(async (title, body, delay = null) => {
-    await Notifications.scheduleNotificationAsync({
-      content: { title, body },
-      trigger: delay ? { seconds: delay / 1000 } : null,
-    });
-  }, []);
+  const renderFastCard = (fast, index) => (
+    <Animated.View
+      key={fast.id}
+      style={[
+        styles.fastCard,
+        {
+          transform: [
+            {
+              translateY: cardSlideAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [50 * (index + 1), 0]
+              })
+            }
+          ]
+        }
+      ]}
+    >
+      <TouchableOpacity
+        style={[
+          styles.fastCardContent,
+          selectedFastIndex === index && styles.selectedFastCard,
+          { borderColor: fast.themeColor }
+        ]}
+        onPress={() => selectBiblicalFast(index)}
+        activeOpacity={0.7}
+      >
+        <LinearGradient
+          colors={selectedFastIndex === index ? fast.gradient : ['transparent', 'transparent']}
+          style={styles.fastCardGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.fastCardHeader}>
+            <View style={[styles.iconContainer, { backgroundColor: fast.themeColor }]}>
+              <Ionicons name={fast.icon} size={24} color="#fff" />
+            </View>
+            <View style={styles.fastCardHeaderText}>
+              <Text style={styles.fastName}>{fast.name}</Text>
+              <Text style={styles.fastVerse}>{fast.verse}</Text>
+            </View>
+          </View>
+          <Text style={styles.fastDescription}>{fast.description}</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+    </Animated.View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
-      <LinearGradient colors={['#0F172A', '#1E293B']} style={styles.gradient}>
+      <LinearGradient
+        colors={['#1E1B4B', '#312E81']}
+        style={styles.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Sacred Fast</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-            <Ionicons name="person-circle-outline" size={28} color="#fff" />
+          <View>
+            <Text style={styles.headerTitle}>Sacred Fast</Text>
+            <Text style={styles.headerSubtitle}>Your spiritual journey</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.profileButton}
+            onPress={() => navigation.navigate('Profile')}
+          >
+            <Ionicons name="person-circle-outline" size={32} color="#fff" />
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollView}>
-          <View style={styles.verseContainer}>
-            <Text style={styles.verseText}>{ENCOURAGING_VERSES[currentVerse]}</Text>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.progressContainer}>
+            <CircularProgress
+              size={300}
+              progress={calculateProgress()}
+              strokeWidth={20}
+              progressColor={selectedFastIndex !== null ? BIBLICAL_FASTS[selectedFastIndex].themeColor : '#6366F1'}
+              backgroundColor="rgba(255,255,255,0.1)"
+            >
+              <View style={styles.progressContent}>
+                {fasting ? (
+                  <>
+                    <Text style={styles.timeLeftLabel}>Remaining</Text>
+                    <Text style={styles.timeLeft}>{formatTimeLeft()}</Text>
+                    <Text style={styles.endTime}>Ends at {formatEndTime()}</Text>
+                    <Text style={styles.fastingType}>
+                      {BIBLICAL_FASTS[selectedFastIndex].name}
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={styles.readyText}>Select a Fast</Text>
+                )}
+              </View>
+            </CircularProgress>
           </View>
 
-          <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-            <View style={styles.progressContainer}>
-              <CircularProgress
-                size={280}
-                progress={calculateProgress()}
-                strokeWidth={15}
-                progressColor="#60A5FA"
-                backgroundColor="rgba(255,255,255,0.2)"
-              >
-                <View style={styles.progressContent}>
-                  <Text style={styles.timeText}>
-                    {fasting ? formatElapsedTime() : 'Ready'}
-                  </Text>
-                  <Text style={styles.targetText}>
-                    {selectedFastIndex !== null ? BIBLICAL_FASTS[selectedFastIndex].name : 'Select a fast type'}
-                  </Text>
-                </View>
-              </CircularProgress>
-            </View>
+          <View style={styles.verseContainer}>
+            <BlurView intensity={80} style={styles.verseCard}>
+              <Text style={styles.verseText}>{ENCOURAGING_VERSES[currentVerse]}</Text>
+            </BlurView>
+          </View>
 
-            <View style={styles.fastTypesContainer}>
-              {BIBLICAL_FASTS.map((fast, index) => (
-                <TouchableOpacity
-                  key={fast.name}
-                  style={[styles.fastTypeButton, selectedFastIndex === index && styles.selectedFastType]}
-                  onPress={() => selectBiblicalFast(index)}
-                >
-                  <Text style={styles.fastTypeName}>{fast.name}</Text>
-                  <Text style={styles.fastTypeVerse}>{fast.verse}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+          <View style={styles.fastsSection}>
+            <Text style={styles.sectionTitle}>Biblical Fasts</Text>
+            {BIBLICAL_FASTS.map((fast, index) => renderFastCard(fast, index))}
+          </View>
 
+          {selectedFastIndex !== null && (
+            <View style={styles.detailsCard}>
+              <Text style={styles.detailsTitle}>
+                About {BIBLICAL_FASTS[selectedFastIndex].name}
+              </Text>
+              <Text style={styles.detailsDescription}>
+                {BIBLICAL_FASTS[selectedFastIndex].detailedDescription}
+              </Text>
+              <Text style={styles.scriptureQuote}>
+                "{BIBLICAL_FASTS[selectedFastIndex].exactWords}"
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.actionContainer}>
             <TouchableOpacity
-              style={[styles.mainButton, { backgroundColor: fasting ? '#DC2626' : '#059669' }]}
+              style={[
+                styles.mainButton,
+                {
+                  backgroundColor: fasting ? '#DC2626' : '#10B981',
+                  transform: [{ scale: scaleAnim }],
+                  opacity: fadeAnim
+                }
+              ]}
               onPress={toggleFasting}
               disabled={selectedFastIndex === null && !fasting}
             >
@@ -222,23 +391,35 @@ const FastingScreen = () => {
               </Text>
             </TouchableOpacity>
 
-            <View style={styles.optionsContainer}>
-              <TouchableOpacity onPress={() => setCustomFastingModalVisible(true)} style={styles.optionButton}>
-                <Text style={styles.optionButtonText}>Custom Fast</Text>
+            <View style={styles.secondaryButtons}>
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={() => setCustomFastingModalVisible(true)}
+              >
+                <Ionicons name="timer-outline" size={24} color="#fff" />
+                <Text style={styles.secondaryButtonText}>Custom Fast</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Journal')} style={styles.optionButton}>
-                <Text style={styles.optionButtonText}>Spiritual Journal</Text>
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={() => navigation.navigate('Journal')}
+              >
+                <Ionicons name="journal-outline" size={24} color="#fff" />
+                <Text style={styles.secondaryButtonText}>Journal</Text>
               </TouchableOpacity>
             </View>
-          </Animated.View>
+          </View>
         </ScrollView>
 
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.footerItem} onPress={() => navigation.navigate('Devotional')}>
+          <TouchableOpacity style={styles.footerItem}>
+            <Ionicons name="home" size={24} color="#fff" />
+            <Text style={styles.footerText}>Home</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerItem}>
             <Ionicons name="book-outline" size={24} color="#fff" />
             <Text style={styles.footerText}>Devotional</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.footerItem} onPress={() => navigation.navigate('Achievements')}>
+          <TouchableOpacity style={styles.footerItem}>
             <Ionicons name="stats-chart-outline" size={24} color="#fff" />
             <Text style={styles.footerText}>Progress</Text>
           </TouchableOpacity>
@@ -269,131 +450,218 @@ const FastingScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#1E1B4B'
   },
   gradient: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 12 : StatusBar.currentHeight + 12,
-  },
-  scrollView: {
-    paddingBottom: 30,
+    flex: 1
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 20 : StatusBar.currentHeight + 20,
+    paddingBottom: 20
   },
   headerTitle: {
-    color: '#fff',
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
-  },
-  verseContainer: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 16,
-  },
-  verseText: {
     color: '#fff',
-    fontSize: 16,
-    fontStyle: 'italic',
-    textAlign: 'center',
+    letterSpacing: 0.5
   },
-  content: {
-    alignItems: 'center',
-    paddingBottom: 20,
+  headerSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 4
+  },
+  profileButton: {
+    padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 20
+  },
+  scrollView: {
+    flex: 1
+  },
+  scrollContent: {
+    padding: 20
   },
   progressContainer: {
-    marginVertical: 20,
     alignItems: 'center',
+    marginVertical: 20
   },
   progressContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
-  timeText: {
-    fontSize: 40,
+  timeLeftLabel: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: 8
+  },
+  timeLeft: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#fff'
+  },
+  endTime: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 8
+  },
+  readyText: {
+    fontSize: 24,
+    fontWeight: '600',
     color: '#fff',
-    fontWeight: 'bold',
+    textAlign: 'center'
   },
-  targetText: {
-    fontSize: 18,
-    color: '#fff',
-    marginTop: 8,
+  verseContainer: {
+    marginVertical: 20
   },
-  fastTypesContainer: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  fastTypeButton: {
+  verseCard: {
     backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 20
   },
-  selectedFastType: {
-    backgroundColor: 'rgba(96, 165, 250, 0.3)',
-    borderColor: '#60A5FA',
-    borderWidth: 1,
-  },
-  fastTypeName: {
+  verseText: {
+    fontSize: 16,
     color: '#fff',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 24
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 16
+  },
+  fastsSection: {
+    marginBottom: 20
+  },
+  fastCard: {
+    marginBottom: 12
+  },
+  fastCardContent: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 16,
+    padding: 16
+  },
+  selectedFastCard: {
+    backgroundColor: 'rgba(99,102,241,0.2)'
+  },
+  fastCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12
+  },
+  fastCardHeaderText: {
+    flex: 1
+  },
+  fastName: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 4,
+    color: '#fff'
   },
-  fastTypeVerse: {
-    color: 'rgba(255,255,255,0.8)',
+  fastVerse: {
     fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 2
+  },
+  fastDescription: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 20
+  },
+  fastCardGradient: {
+    borderRadius: 16,
+    padding: 16
+  },
+  detailsCard: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20
+  },
+  detailsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 12
+  },
+  detailsDescription: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 24,
+    marginBottom: 16
+  },
+  scriptureQuote: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    color: 'rgba(255,255,255,0.7)',
+    lineHeight: 20
   },
   mainButton: {
     paddingVertical: 16,
-    paddingHorizontal: 48,
     borderRadius: 30,
-    elevation: 3,
+    alignItems: 'center',
+    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5
   },
   mainButtonText: {
-    color: '#fff',
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
+    color: '#fff'
   },
-  optionsContainer: {
+  actionContainer: {
+    marginBottom: 20
+  },
+  secondaryButtons: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20
+  },
+  secondaryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
-  },
-  optionButton: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    padding: 16,
     borderRadius: 12,
-    marginHorizontal: 8,
+    marginHorizontal: 6
   },
-  optionButtonText: {
-    color: '#fff',
+  secondaryButtonText: {
     fontSize: 16,
+    color: '#fff',
+    marginLeft: 8
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    borderTopColor: 'rgba(255,255,255,0.2)',
+    paddingVertical: 16,
+    backgroundColor: 'rgba(0,0,0,0.2)',
     borderTopWidth: 1,
-    paddingVertical: 12,
+    borderTopColor: 'rgba(255,255,255,0.1)'
   },
   footerItem: {
-    alignItems: 'center',
+    alignItems: 'center'
   },
   footerText: {
+    fontSize: 12,
     color: '#fff',
-    fontSize: 14,
-    marginTop: 4,
-  },
+    marginTop: 4
+  }
 });
 
 export default FastingScreen;
