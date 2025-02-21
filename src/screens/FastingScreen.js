@@ -249,6 +249,7 @@ const FastingScreen = () => {
     return Math.min((elapsedTime / customTarget) * 100, 100);
   };
 
+  // Updated renderFastCard: if the current card is selected, show details directly below it
   const renderFastCard = (fast, index) => (
     <Animated.View
       key={fast.id}
@@ -293,6 +294,13 @@ const FastingScreen = () => {
           <Text style={styles.fastDescription}>{fast.description}</Text>
         </LinearGradient>
       </TouchableOpacity>
+      {selectedFastIndex === index && (
+        <View style={styles.detailsCard}>
+          <Text style={styles.detailsTitle}>About {fast.name}</Text>
+          <Text style={styles.detailsDescription}>{fast.detailedDescription}</Text>
+          <Text style={styles.scriptureQuote}>"{fast.exactWords}"</Text>
+        </View>
+      )}
     </Animated.View>
   );
 
@@ -359,20 +367,6 @@ const FastingScreen = () => {
             {BIBLICAL_FASTS.map((fast, index) => renderFastCard(fast, index))}
           </View>
 
-          {selectedFastIndex !== null && (
-            <View style={styles.detailsCard}>
-              <Text style={styles.detailsTitle}>
-                About {BIBLICAL_FASTS[selectedFastIndex].name}
-              </Text>
-              <Text style={styles.detailsDescription}>
-                {BIBLICAL_FASTS[selectedFastIndex].detailedDescription}
-              </Text>
-              <Text style={styles.scriptureQuote}>
-                "{BIBLICAL_FASTS[selectedFastIndex].exactWords}"
-              </Text>
-            </View>
-          )}
-
           <View style={styles.actionContainer}>
             <TouchableOpacity
               style={[
@@ -411,15 +405,24 @@ const FastingScreen = () => {
         </ScrollView>
 
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.footerItem}>
+          <TouchableOpacity
+            style={styles.footerItem}
+            onPress={() => navigation.navigate('Dashboard')}
+          >
             <Ionicons name="home" size={24} color="#fff" />
             <Text style={styles.footerText}>Home</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.footerItem}>
+          <TouchableOpacity
+            style={styles.footerItem}
+            onPress={() => navigation.navigate('Devotional')}
+          >
             <Ionicons name="book-outline" size={24} color="#fff" />
             <Text style={styles.footerText}>Devotional</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.footerItem}>
+          <TouchableOpacity
+            style={styles.footerItem}
+            onPress={() => navigation.navigate('Achievements')}
+          >
             <Ionicons name="stats-chart-outline" size={24} color="#fff" />
             <Text style={styles.footerText}>Progress</Text>
           </TouchableOpacity>
@@ -587,7 +590,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 16,
     padding: 20,
-    marginBottom: 20
+    marginTop: 8
   },
   detailsTitle: {
     fontSize: 18,
