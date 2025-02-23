@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import {
   SafeAreaView,
   View,
@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 
+// Constants
 const { width } = Dimensions.get('window');
 const SPACING = {
   xs: 4,
@@ -25,83 +26,114 @@ const SPACING = {
   xl: 32,
 };
 
+// Type Definitions (if using TypeScript)
+// interface NavigationItem {
+//   screen: string;
+//   label: string;
+//   icon: string;
+//   gradient: string[];
+//   description: string;
+// }
+
+const METRICS = {
+  fastingProgress: 67,
+  journalEntries: 12,
+  mood: 'Positive',
+  streak: 7,
+};
+
+const NAVIGATION_ITEMS = [
+  { 
+    screen: 'Fasting', 
+    label: 'Fasting Timer', 
+    icon: 'timer-outline',
+    gradient: ['#FF6B6B', '#FF8E8E'],
+    description: 'Track your fasting progress'
+  },
+  { 
+    screen: 'Devotional', 
+    label: 'Devotional', 
+    icon: 'book-outline',
+    gradient: ['#4ECDC4', '#45B7AF'],
+    description: 'Daily spiritual guidance'
+  },
+  { 
+    screen: 'Journal', 
+    label: 'Journal', 
+    icon: 'create-outline',
+    gradient: ['#FFD93D', '#FFE169'],
+    description: 'Record your thoughts'
+  },
+  { 
+    screen: 'DailyInspirations', 
+    label: 'Inspirations', 
+    icon: 'sunny-outline',
+    gradient: ['#6C5CE7', '#8177EA'],
+    description: 'Get motivated'
+  }
+];
+
+// Memoized Components
+const MetricCard = memo(({ icon, value, label, progress, gradientColors }) => (
+  <View style={styles.metricCardContainer}>
+    <BlurView intensity={80} style={styles.metricCard}>
+      <LinearGradient
+        colors={gradientColors}
+        style={styles.metricIconContainer}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <Ionicons name={icon} size={24} color="#FFF" />
+      </LinearGradient>
+      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={styles.metricLabel}>{label}</Text>
+      {progress !== null && (
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <LinearGradient
+              colors={gradientColors}
+              style={[styles.progressFill, { width: `${progress}%` }]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            />
+          </View>
+          <Text style={styles.progressText}>{progress}%</Text>
+        </View>
+      )}
+    </BlurView>
+  </View>
+));
+
+const NavigationGridItem = memo(({ item, onPress }) => (
+  <TouchableOpacity
+    style={styles.gridItem}
+    onPress={onPress}
+    accessibilityLabel={item.label}
+  >
+    <BlurView intensity={80} style={styles.gridItemContent}>
+      <LinearGradient
+        colors={item.gradient}
+        style={styles.gridIconContainer}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <Ionicons name={item.icon} size={24} color="#FFF" />
+      </LinearGradient>
+      <Text style={styles.gridLabel}>{item.label}</Text>
+      <Text style={styles.gridDescription}>{item.description}</Text>
+    </BlurView>
+  </TouchableOpacity>
+));
+
 const DashboardScreen = () => {
   const navigation = useNavigation();
   const [scrollY] = useState(new Animated.Value(0));
-
-  const metrics = {
-    fastingProgress: 67,
-    journalEntries: 12,
-    mood: 'Positive',
-    streak: 7,
-  };
-
-  const navigationItems = [
-    { 
-      screen: 'Fasting', 
-      label: 'Fasting Timer', 
-      icon: 'timer-outline',
-      gradient: ['#FF6B6B', '#FF8E8E'],
-      description: 'Track your fasting progress'
-    },
-    { 
-      screen: 'Devotional', 
-      label: 'Devotional', 
-      icon: 'book-outline',
-      gradient: ['#4ECDC4', '#45B7AF'],
-      description: 'Daily spiritual guidance'
-    },
-    { 
-      screen: 'Journal', 
-      label: 'Journal', 
-      icon: 'create-outline',
-      gradient: ['#FFD93D', '#FFE169'],
-      description: 'Record your thoughts'
-    },
-    { 
-      screen: 'DailyInspirations', 
-      label: 'Inspirations', 
-      icon: 'sunny-outline',
-      gradient: ['#6C5CE7', '#8177EA'],
-      description: 'Get motivated'
-    }
-  ];
 
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, 100],
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
-
-  const renderMetricCard = (icon, value, label, progress = null, gradientColors) => (
-    <View style={styles.metricCardContainer}>
-      <BlurView intensity={80} style={styles.metricCard}>
-        <LinearGradient
-          colors={gradientColors}
-          style={styles.metricIconContainer}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <Ionicons name={icon} size={24} color="#FFF" />
-        </LinearGradient>
-        <Text style={styles.metricValue}>{value}</Text>
-        <Text style={styles.metricLabel}>{label}</Text>
-        {progress !== null && (
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <LinearGradient
-                colors={gradientColors}
-                style={[styles.progressFill, { width: `${progress}%` }]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              />
-            </View>
-            <Text style={styles.progressText}>{progress}%</Text>
-          </View>
-        )}
-      </BlurView>
-    </View>
-  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -112,24 +144,26 @@ const DashboardScreen = () => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        {/* Animated Header Background */}
         <Animated.View style={[styles.headerBackground, { opacity: headerOpacity }]}>
           <BlurView intensity={80} style={StyleSheet.absoluteFill} />
         </Animated.View>
 
-        {/* Header Content */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Good Morning,</Text>
             <Text style={styles.username}>Sarah</Text>
           </View>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.iconButton}>
+            <TouchableOpacity 
+              style={styles.iconButton} 
+              accessibilityLabel="Search"
+            >
               <Ionicons name="search-outline" size={24} color="#FFF" />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.iconButton}
               onPress={() => navigation.navigate('Notifications')}
+              accessibilityLabel="Notifications"
             >
               <Ionicons name="notifications-outline" size={24} color="#FFF" />
               <View style={styles.notificationBadge} />
@@ -146,7 +180,6 @@ const DashboardScreen = () => {
           )}
           scrollEventThrottle={16}
         >
-          {/* Streak Card */}
           <View style={styles.streakContainer}>
             <BlurView intensity={80} style={styles.streakCard}>
               <LinearGradient
@@ -159,14 +192,13 @@ const DashboardScreen = () => {
                   <Ionicons name="flame" size={32} color="#FFD93D" />
                 </View>
                 <View style={styles.streakTextContainer}>
-                  <Text style={styles.streakCount}>{metrics.streak} Day Streak!</Text>
+                  <Text style={styles.streakCount}>{METRICS.streak} Day Streak!</Text>
                   <Text style={styles.streakSubtext}>You're on fire! Keep going!</Text>
                 </View>
               </LinearGradient>
             </BlurView>
           </View>
 
-          {/* Metrics Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Today's Progress</Text>
             <ScrollView 
@@ -174,58 +206,41 @@ const DashboardScreen = () => {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.metricsScrollContainer}
             >
-              {renderMetricCard(
-                'timer-outline',
-                `${metrics.fastingProgress}%`,
-                'Fasting Progress',
-                metrics.fastingProgress,
-                ['#FF6B6B', '#FF8E8E']
-              )}
-              {renderMetricCard(
-                'book-outline',
-                metrics.journalEntries,
-                'Journal Entries',
-                null,
-                ['#4ECDC4', '#45B7AF']
-              )}
-              {renderMetricCard(
-                'sunny-outline',
-                metrics.mood,
-                'Current Mood',
-                null,
-                ['#FFD93D', '#FFE169']
-              )}
+              <MetricCard
+                icon="timer-outline"
+                value={`${METRICS.fastingProgress}%`}
+                label="Fasting Progress"
+                progress={METRICS.fastingProgress}
+                gradientColors={['#FF6B6B', '#FF8E8E']}
+              />
+              <MetricCard
+                icon="book-outline"
+                value={METRICS.journalEntries}
+                label="Journal Entries"
+                gradientColors={['#4ECDC4', '#45B7AF']}
+              />
+              <MetricCard
+                icon="sunny-outline"
+                value={METRICS.mood}
+                label="Current Mood"
+                gradientColors={['#FFD93D', '#FFE169']}
+              />
             </ScrollView>
           </View>
 
-          {/* Quick Actions Grid */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
             <View style={styles.gridContainer}>
-              {navigationItems.map((item, index) => (
-                <TouchableOpacity
+              {NAVIGATION_ITEMS.map((item, index) => (
+                <NavigationGridItem
                   key={index}
-                  style={styles.gridItem}
+                  item={item}
                   onPress={() => navigation.navigate(item.screen)}
-                >
-                  <BlurView intensity={80} style={styles.gridItemContent}>
-                    <LinearGradient
-                      colors={item.gradient}
-                      style={styles.gridIconContainer}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                    >
-                      <Ionicons name={item.icon} size={24} color="#FFF" />
-                    </LinearGradient>
-                    <Text style={styles.gridLabel}>{item.label}</Text>
-                    <Text style={styles.gridDescription}>{item.description}</Text>
-                  </BlurView>
-                </TouchableOpacity>
+                />
               ))}
             </View>
           </View>
 
-          {/* Daily Wisdom Card */}
           <View style={styles.section}>
             <BlurView intensity={80} style={styles.wisdomCard}>
               <View style={styles.wisdomHeader}>
@@ -454,4 +469,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DashboardScreen;
+export default memo(DashboardScreen);
