@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "1023bba1-6827-4b1c-bf91-5b24192af808"
+      }
+    },
+    "android": {
+      "package": "com.theotsori.backend"
+    }
+  }
+}
