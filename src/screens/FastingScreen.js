@@ -1,17 +1,16 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Animated, 
-  TouchableOpacity, 
-  SafeAreaView, 
-  Modal, 
-  ScrollView, 
-  Platform, 
-  StatusBar, 
-  Dimensions, 
-  Easing 
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  TouchableOpacity,
+  SafeAreaView,
+  Modal,
+  ScrollView,
+  Platform,
+  StatusBar,
+  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +20,7 @@ import CustomFastingModal from '../components/CustomFastingModal';
 import FeelingLogModal from '../components/FeelingLogModal';
 import * as Notifications from 'expo-notifications';
 import { useNavigation } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -33,7 +33,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Biblical fasts data with enhanced styling properties and unique icons
+// Biblical fasts data with styling properties and unique icons.
 const BIBLICAL_FASTS = [
   {
     id: '1',
@@ -41,8 +41,10 @@ const BIBLICAL_FASTS = [
     duration: 21 * 24 * 60 * 60 * 1000, // 21 days
     description: "A partial fast abstaining from choice foods",
     verse: "Daniel 10:2-3",
-    exactWords: "At that time I, Daniel, mourned for three weeks. I ate no choice food; no meat or wine touched my lips; and I used no lotions at all until the three weeks were over.",
-    detailedDescription: "A 21-day fast focused on simple foods and spiritual clarity, following Daniel's example of devotion.",
+    exactWords:
+      "At that time I, Daniel, mourned for three weeks. I ate no choice food; no meat or wine touched my lips; and I used no lotions at all until the three weeks were over.",
+    detailedDescription:
+      "A 21-day fast focused on simple foods and spiritual clarity, following Daniel's example of devotion.",
     icon: "leaf-outline",
     themeColor: "#10B981",
     gradient: ['#059669', '#10B981']
@@ -53,8 +55,10 @@ const BIBLICAL_FASTS = [
     duration: 3 * 24 * 60 * 60 * 1000, // 3 days
     description: "Complete fast for divine intervention",
     verse: "Esther 4:16",
-    exactWords: "Go, gather together all the Jews who are in Susa, and fast for me. Do not eat or drink for three days, night or day.",
-    detailedDescription: "A three-day fast for urgent spiritual breakthrough, following Queen Esther's example.",
+    exactWords:
+      "Go, gather together all the Jews who are in Susa, and fast for me. Do not eat or drink for three days, night or day.",
+    detailedDescription:
+      "A three-day fast for urgent spiritual breakthrough, following Queen Esther's example.",
     icon: "star-outline",
     themeColor: "#8B5CF6",
     gradient: ['#7C3AED', '#8B5CF6']
@@ -65,8 +69,10 @@ const BIBLICAL_FASTS = [
     duration: 24 * 60 * 60 * 1000, // 1 day
     description: "Sunset to sunset spiritual cleansing",
     verse: "Leviticus 23:27-32",
-    exactWords: "The tenth day of this seventh month is the Day of Atonement. Hold a sacred assembly and deny yourselves.",
-    detailedDescription: "A 24-hour fast from sunset to sunset, focused on repentance and spiritual renewal.",
+    exactWords:
+      "The tenth day of this seventh month is the Day of Atonement. Hold a sacred assembly and deny yourselves.",
+    detailedDescription:
+      "A 24-hour fast from sunset to sunset, focused on repentance and spiritual renewal.",
     icon: "moon-outline",
     themeColor: "#6366F1",
     gradient: ['#4F46E5', '#6366F1']
@@ -77,53 +83,44 @@ const BIBLICAL_FASTS = [
     duration: 40 * 24 * 60 * 60 * 1000, // 40 days
     description: "A fast practiced by Moses and Jesus for spiritual preparation",
     verse: "Exodus 34:28 / Matthew 4:1-2",
-    exactWords: "Moses: 'Moses was there with the Lord forty days and forty nights without eating bread or drinking water.' / Jesus: 'Then Jesus was led by the Spirit into the wilderness...'",
-    detailedDescription: "A 40-day fast demonstrating total reliance on God, as exemplified by Moses on Mount Sinai and Jesus in the wilderness.",
+    exactWords:
+      "Moses: 'Moses was there with the Lord forty days and forty nights without eating bread or drinking water.' / Jesus: 'Then Jesus was led by the Spirit into the wilderness...'",
+    detailedDescription:
+      "A 40-day fast demonstrating total reliance on God, as exemplified by Moses on Mount Sinai and Jesus in the wilderness.",
     icon: "sunny-outline",
     themeColor: "#F59E0B",
     gradient: ['#FBBF24', '#F59E0B']
   }
 ];
 
-const ENCOURAGING_VERSES = [
-  "But when you fast, put oil on your head and wash your face, so that it will not be obvious to others that you are fasting. - Matthew 6:17-18",
-  "Prayer and fasting can move mountains and bring breakthrough in your life. - Matthew 17:21",
-  "This kind can only come out by prayer and fasting. - Mark 9:29",
-  "Declare a holy fast; call a sacred assembly. - Joel 1:14"
-];
-
 const FastingScreen = () => {
   const navigation = useNavigation();
+
+  // State variables
   const [fasting, setFasting] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [selectedFastIndex, setSelectedFastIndex] = useState(null);
-  const [currentVerse, setCurrentVerse] = useState(0);
   const [customFastingModalVisible, setCustomFastingModalVisible] = useState(false);
   const [feelingLogModalVisible, setFeelingLogModalVisible] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current;
-  const cardSlideAnim = useRef(new Animated.Value(0)).current;
   const [customTarget, setCustomTarget] = useState(BIBLICAL_FASTS[0].duration);
 
-  // Animation setup
+  // Animation refs
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const cardSlideAnim = useRef(new Animated.Value(0)).current;
+
+  // Animate card slide on mount
   useEffect(() => {
     Animated.spring(cardSlideAnim, {
       toValue: 1,
       tension: 20,
       friction: 7,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start();
+  }, [cardSlideAnim]);
 
-    const verseInterval = setInterval(() => {
-      setCurrentVerse(prev => (prev + 1) % ENCOURAGING_VERSES.length);
-    }, 10000);
-
-    return () => clearInterval(verseInterval);
-  }, []);
-
-  // Timer management
+  // Timer management: update elapsed time and check for fast completion
   useEffect(() => {
     let interval;
     if (fasting && startTime) {
@@ -131,26 +128,16 @@ const FastingScreen = () => {
         const now = new Date();
         const newElapsed = now - startTime;
         setElapsedTime(newElapsed);
-        
         if (newElapsed >= customTarget) {
           handleFastComplete();
         }
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [fasting, startTime, customTarget]);
+  }, [fasting, startTime, customTarget, handleFastComplete]);
 
-  const handleFastComplete = async () => {
-    await scheduleNotification(
-      'Fast Completed! 🎉',
-      'Congratulations on completing your fast. Take time to reflect on your spiritual journey.'
-    );
-    setFasting(false);
-    setStartTime(null);
-    setElapsedTime(0);
-  };
-
-  const scheduleNotification = async (title, body, delay = 0) => {
+  // Schedule a notification
+  const scheduleNotification = useCallback(async (title, body, delay = 0) => {
     try {
       await Notifications.scheduleNotificationAsync({
         content: {
@@ -158,14 +145,26 @@ const FastingScreen = () => {
           body,
           sound: true,
         },
-        trigger: delay ? { seconds: delay } : null,
+        trigger: delay > 0 ? { seconds: delay } : null,
       });
     } catch (error) {
       console.error('Failed to schedule notification:', error);
     }
-  };
+  }, []);
 
-  const animateButton = () => {
+  // Complete the fast
+  const handleFastComplete = useCallback(async () => {
+    await scheduleNotification(
+      'Fast Completed! 🎉',
+      'Congratulations on completing your fast. Take time to reflect on your spiritual journey.'
+    );
+    setFasting(false);
+    setStartTime(null);
+    setElapsedTime(0);
+  }, [scheduleNotification]);
+
+  // Animate button press for visual feedback
+  const animateButton = useCallback(() => {
     Animated.sequence([
       Animated.parallel([
         Animated.timing(scaleAnim, {
@@ -192,13 +191,19 @@ const FastingScreen = () => {
         }),
       ]),
     ]).start();
-  };
+  }, [scaleAnim, fadeAnim]);
 
-  const toggleFasting = async () => {
+  // Toggle fasting state with haptic feedback
+  const toggleFasting = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     animateButton();
     if (fasting) {
       await handleFastComplete();
     } else {
+      if (selectedFastIndex === null) {
+        console.warn("Please select a fast before starting.");
+        return;
+      }
       setFasting(true);
       setStartTime(new Date());
       await scheduleNotification(
@@ -207,14 +212,17 @@ const FastingScreen = () => {
         3600 // Notification after 1 hour
       );
     }
-  };
+  }, [fasting, selectedFastIndex, animateButton, handleFastComplete, scheduleNotification]);
 
-  const selectBiblicalFast = (index) => {
+  // Select a biblical fast and update target duration
+  const selectBiblicalFast = useCallback((index) => {
     setSelectedFastIndex(index);
     setCustomTarget(BIBLICAL_FASTS[index].duration);
     animateButton();
-  };
+    Haptics.selectionAsync();
+  }, [animateButton]);
 
+  // Format a duration (ms) to a human-readable string
   const formatTime = (ms) => {
     const totalSeconds = Math.floor(ms / 1000);
     const days = Math.floor(totalSeconds / (24 * 3600));
@@ -230,6 +238,7 @@ const FastingScreen = () => {
     return `${minutes}m ${seconds}s`;
   };
 
+  // Format remaining time and estimated end time
   const formatTimeLeft = () => {
     const remaining = customTarget - elapsedTime;
     return remaining > 0 ? formatTime(remaining) : "0s";
@@ -238,19 +247,20 @@ const FastingScreen = () => {
   const formatEndTime = () => {
     if (!startTime) return "";
     const endTime = new Date(startTime.getTime() + customTarget);
-    return endTime.toLocaleTimeString([], { 
-      hour: '2-digit', 
+    return endTime.toLocaleTimeString([], {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true,
     });
   };
 
-  const calculateProgress = () => {
+  // Calculate progress percentage for the circular progress indicator
+  const calculateProgress = useMemo(() => {
     return Math.min((elapsedTime / customTarget) * 100, 100);
-  };
+  }, [elapsedTime, customTarget]);
 
-  // Updated renderFastCard: if the current card is selected, show details directly below it
-  const renderFastCard = (fast, index) => (
+  // Render each biblical fast card with animations and details when selected
+  const renderFastCard = useCallback((fast, index) => (
     <Animated.View
       key={fast.id}
       style={[
@@ -260,18 +270,18 @@ const FastingScreen = () => {
             {
               translateY: cardSlideAnim.interpolate({
                 inputRange: [0, 1],
-                outputRange: [50 * (index + 1), 0]
-              })
-            }
-          ]
-        }
+                outputRange: [50 * (index + 1), 0],
+              }),
+            },
+          ],
+        },
       ]}
     >
       <TouchableOpacity
         style={[
           styles.fastCardContent,
           selectedFastIndex === index && styles.selectedFastCard,
-          { borderColor: fast.themeColor }
+          { borderColor: fast.themeColor },
         ]}
         onPress={() => selectBiblicalFast(index)}
         activeOpacity={0.7}
@@ -302,7 +312,7 @@ const FastingScreen = () => {
         </View>
       )}
     </Animated.View>
-  );
+  ), [cardSlideAnim, selectedFastIndex, selectBiblicalFast]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -334,9 +344,13 @@ const FastingScreen = () => {
           <View style={styles.progressContainer}>
             <CircularProgress
               size={300}
-              progress={calculateProgress()}
+              progress={calculateProgress}
               strokeWidth={20}
-              progressColor={selectedFastIndex !== null ? BIBLICAL_FASTS[selectedFastIndex].themeColor : '#6366F1'}
+              progressColor={
+                selectedFastIndex !== null
+                  ? BIBLICAL_FASTS[selectedFastIndex].themeColor
+                  : '#6366F1'
+              }
               backgroundColor="rgba(255,255,255,0.1)"
             >
               <View style={styles.progressContent}>
@@ -345,21 +359,17 @@ const FastingScreen = () => {
                     <Text style={styles.timeLeftLabel}>Remaining</Text>
                     <Text style={styles.timeLeft}>{formatTimeLeft()}</Text>
                     <Text style={styles.endTime}>Ends at {formatEndTime()}</Text>
-                    <Text style={styles.fastingType}>
-                      {BIBLICAL_FASTS[selectedFastIndex].name}
-                    </Text>
+                    {selectedFastIndex !== null && (
+                      <Text style={styles.fastingType}>
+                        {BIBLICAL_FASTS[selectedFastIndex].name}
+                      </Text>
+                    )}
                   </>
                 ) : (
                   <Text style={styles.readyText}>Select a Fast</Text>
                 )}
               </View>
             </CircularProgress>
-          </View>
-
-          <View style={styles.verseContainer}>
-            <BlurView intensity={80} style={styles.verseCard}>
-              <Text style={styles.verseText}>{ENCOURAGING_VERSES[currentVerse]}</Text>
-            </BlurView>
           </View>
 
           <View style={styles.fastsSection}>
@@ -374,8 +384,8 @@ const FastingScreen = () => {
                 {
                   backgroundColor: fasting ? '#DC2626' : '#10B981',
                   transform: [{ scale: scaleAnim }],
-                  opacity: fadeAnim
-                }
+                  opacity: fadeAnim,
+                },
               ]}
               onPress={toggleFasting}
               disabled={selectedFastIndex === null && !fasting}
@@ -510,26 +520,17 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     marginTop: 8
   },
+  fastingType: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+    marginTop: 8
+  },
   readyText: {
     fontSize: 24,
     fontWeight: '600',
     color: '#fff',
     textAlign: 'center'
-  },
-  verseContainer: {
-    marginVertical: 20
-  },
-  verseCard: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 16,
-    padding: 20
-  },
-  verseText: {
-    fontSize: 16,
-    color: '#fff',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    lineHeight: 24
   },
   sectionTitle: {
     fontSize: 20,
