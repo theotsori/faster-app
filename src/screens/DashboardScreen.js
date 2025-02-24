@@ -121,7 +121,7 @@ const DashboardScreen = () => {
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Good Morning,</Text>
-            <Text style={styles.username}>Sarah</Text>
+            <Text style={styles.username}>RAPHAEL MARTIN</Text>
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.iconButton}>
